@@ -8,7 +8,7 @@ from tkinter import ttk
 
 
 class TypingSpeedTest:
-  
+
     DEFAULT_TEXT = "The quick brown fox jumps over the lazy dog."
     REFRESH_RATE = 100
     IGNORED_KEYS = [16, 17, 18, 20]
@@ -17,7 +17,8 @@ class TypingSpeedTest:
 
         self.window = Tk()
         self.window.title("Typing Speed Test")
-        #Initial state variables
+
+        #Variables
         self.is_running = False
         self.start_time = None
         self.refresh = None
@@ -26,11 +27,14 @@ class TypingSpeedTest:
 
         self.correct_text = self.load_text(text_file) if text_file else self.DEFAULT_TEXT
 
-        self.setup_ui()
+        self._setup_ui()
 
-    def setup_ui(self):
-        self.frame = Frame(self.window)
+    def _setup_ui(self):
+        """Sets up the main display. Buttons an entries are defined in this function"""
+
+        self.frame=Frame()
         self.frame.pack(padx=10, pady=10)
+
 
         # Text to type
         self.display_label = ttk.Label(
@@ -59,7 +63,16 @@ class TypingSpeedTest:
         )
         self.result_label.grid(row=2, column=0, columnspan=3, padx=5, pady=20)
         sv_ttk.set_theme("dark")
-        
+
+        #Restart Button
+        self.restart_button = ttk.Button(
+            self.frame,
+            text="Restart",
+            command=self.restart,
+            width=15
+            # font=("Arial", 14)
+        )
+        self.restart_button.grid(row=3, column=1, padx=5, pady=20)
         # Reset button
         self.reset_button = ttk.Button(
             self.frame, 
@@ -68,29 +81,38 @@ class TypingSpeedTest:
             width=15
             # font=("Arial", 14)
         )
-        self.reset_button.grid(row=3, column=1, padx=5, pady=20)
+        self.reset_button.grid(row=4, column=1, padx=5, pady=20)
 
 
-    def load_text(self, text_file=None) -> str:
+    def load_text(self, text_file='texts.txt') -> str:
+        """Selects a random text from a texts.txt file, if none exists, uses the default text in constant """
+
+        #Using multiple methods to catch the txt file to avoid difficulty when running the code
         file = text_file if text_file else "texts.txt"
         texts = [self.DEFAULT_TEXT]
         try:
             with open(file, 'r') as file:
-                texts = [line.strip() for line in file.readlines()]
+                data = [line.strip() for line in file.readlines()]
+                if data:
+                    texts = data
         except FileNotFoundError:
             messagebox.showerror(f"File not found: '{text_file}\nUsing default text")
         except Exception as e:
             messagebox.showerror(f"Error loading text file: {e}\nUsing default text.")
         else:
             return random.choice(texts)
-    
+
     def start(self, event=None):
+        """Initiates the program after a key is typed as long as the key is not shift, alt, enter, or caps"""
+
         if not self.is_running and event.keycode not in self.IGNORED_KEYS:
             self.is_running = True
             self.start_time = time.time()
             self.update()
 
     def update(self):
+        """Updates the stats and display after a time specified by th refresh rate in the constants"""
+
         if  not self.is_running:
             return
         
@@ -104,8 +126,11 @@ class TypingSpeedTest:
         self.refresh = self.window.after(self.REFRESH_RATE, self.update)
 
     def calculate_accuracy(self) -> float:
+        """Calculates accuracy based off how many incorrect keys were pressed against the length of the target string.
+        If no incorrect keys have been pressed the accuracy is determined off the entry's similarity to the target"""
+
         typed_text = self.entry.get()
-        if self.counter >0:
+        if 0 < self.counter < len(self.correct_text):
             acc = len(self.correct_text) - self.counter //  len(self.correct_text) * 100
             return acc
 
@@ -116,21 +141,29 @@ class TypingSpeedTest:
         return (correct_ans / len(typed_text) * 100) if typed_text else 0.00
     
     def check_input(self, event=None):
+        """Checks the user input against the target
+        and changes the entry colour to indicate if input is accurate or incorrect"""
+
         typed_text = self.entry.get()
         correct = self.correct_text[:len(typed_text)]
 
-        if typed_text.lower() == correct.lower():
-            self.entry.config(fg="green")
-        else:
-            self.entry.config(fg="red")
-            if typed_text[-1] != correct[len(typed_text)-1]:
-                self.counter += 1
-
-
-        if typed_text == self.correct_text:
+        if len(typed_text) == len(self.correct_text):
             self.terminate()
 
+        if event:
+            if typed_text.lower() == correct.lower():
+                self.entry.config(fg="green")
+            else:
+                self.entry.config(fg="red")
+                if typed_text[-1] != correct[len(typed_text)-1]:
+                    self.counter += 1
+
+
+
     def terminate(self):
+        """Ends the program and displays final stats. Returns variables to initial state conditions."""
+
+        self.entry.config(state='disabled')
         self.is_running = False
         if self.refresh:
             self.window.after_cancel(self.refresh)
@@ -138,22 +171,44 @@ class TypingSpeedTest:
         if self.start_time is not None:
             self.stats.time_spent = time.time() - self.start_time
 
+
         messagebox.showinfo("Test Complete", self.stats.summary)
 
-    def reset(self):
+    def restart(self):
+        """Restarts the typing test with the same text"""
+
         self.is_running = False
         if self.refresh:
             self.window.after_cancel(self.refresh)
             self.refresh = None
         self.start_time = None
         self.stats = TypingStats()
-        self.correct_text = self.load_text(text_file="texts.txt")
+        self.counter = 0
+        self.display_label.config(text=self.correct_text)
         self.entry.delete(0, END)
         self.entry.config(fg="black")
         self.entry.focus()
         self.result_label.config(text='Start typing to begin...')
 
 
+    def reset(self):
+        """Effectively restarts the app, selecting a new random text sample"""
 
-app = TypingSpeedTest(text_file="texts.txt")
-app.window.mainloop()
+        self.is_running = False
+        if self.refresh:
+            self.window.after_cancel(self.refresh)
+            self.refresh = None
+        self.start_time = None
+        self.stats = TypingStats()
+        self.counter = 0
+        self.correct_text = self.load_text(text_file="texts.txt")
+        self.display_label.config(text=self.correct_text)
+        self.entry.delete(0, END)
+        self.entry.config(fg="black")
+        self.entry.focus()
+        self.result_label.config(text='Start typing to begin...')
+
+
+if __name__ == "__main__":
+    app = TypingSpeedTest(text_file="texts.txt")
+    app.window.mainloop()
