@@ -24,7 +24,7 @@ class TypingSpeedTest:
         self.refresh = None
         self.stats = TypingStats()
         self.counter = 0
-
+        
         self.correct_text = self.load_text(text_file) if text_file else self.DEFAULT_TEXT
 
         self._setup_ui()
@@ -34,7 +34,6 @@ class TypingSpeedTest:
 
         self.frame=Frame()
         self.frame.pack(padx=10, pady=10)
-
 
         # Text to type
         self.display_label = ttk.Label(
@@ -73,6 +72,7 @@ class TypingSpeedTest:
             # font=("Arial", 14)
         )
         self.restart_button.grid(row=3, column=1, padx=5, pady=20)
+        
         # Reset button
         self.reset_button = ttk.Button(
             self.frame, 
@@ -115,7 +115,7 @@ class TypingSpeedTest:
 
         if  not self.is_running:
             return
-        
+            
         if self.start_time is not None:
             self.stats.time_spent = time.time() - self.start_time
             self.stats.characters_typed = len(self.entry.get())
@@ -135,9 +135,7 @@ class TypingSpeedTest:
             return acc
 
         correct_ans = sum(
-            1 for i, letter in enumerate(typed_text) if i < len(self.correct_text) and letter == self.correct_text[i]
-        )
-
+            1 for i, letter in enumerate(typed_text) if i < len(self.correct_text) and letter == self.correct_text[i])
         return (correct_ans / len(typed_text) * 100) if typed_text else 0.00
     
     def check_input(self, event=None):
@@ -158,8 +156,6 @@ class TypingSpeedTest:
                 if typed_text[-1] != correct[len(typed_text)-1]:
                     self.counter += 1
 
-
-
     def terminate(self):
         """Ends the program and displays final stats. Returns variables to initial state conditions."""
 
@@ -170,8 +166,6 @@ class TypingSpeedTest:
             self.refresh = None
         if self.start_time is not None:
             self.stats.time_spent = time.time() - self.start_time
-
-
         messagebox.showinfo("Test Complete", self.stats.summary)
 
     def restart(self):
